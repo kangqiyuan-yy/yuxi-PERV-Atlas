@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2 class="section-title" data-i18n="br.title">Browser</h2>
+  <p class="section-subtitle" data-i18n="br.subtitle">...</p>
+
+  <section class="card" style="margin-bottom:18px;">
+    <h3 style="margin-top:0;" data-i18n="br.dl.title">Files</h3>
+    <div class="downloads">
+      <a class="download-item" href="{{ url_for('download_file', filename='pass.139.fa') }}">
+        <span class="ext">FA</span>
+        <span data-i18n="br.dl.fa">139 FASTA</span>
+      </a>
+      <a class="download-item" href="{{ url_for('download_file', filename='ORF.combine.HTML.bed') }}">
+        <span class="ext">BED</span>
+        <span data-i18n="br.dl.orf">ORF BED</span>
+      </a>
+      <a class="download-item" href="{{ url_for('download_file', filename='domin.combine.HTML.bed') }}">
+        <span class="ext">BED</span>
+        <span data-i18n="br.dl.domain">Domain BED</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="browser-layout">
+    <aside class="id-list">
+      <input type="search" id="id-search" data-i18n-ph="br.search.id" />
+      <ul id="id-list-ul"></ul>
+    </aside>
+
+    <div class="viewer">
+      <div class="card">
+        <div class="toolbar">
+          <div class="group" id="mode-group">
+            <button data-mode="orf" class="active" data-i18n="br.mode.orf">ORF</button>
+            <button data-mode="domain" data-i18n="br.mode.domain">Domain</button>
+          </div>
+          <div class="group" id="seq-group">
+            <button data-seq="dna" class="active" data-i18n="br.seq.dna">DNA</button>
+            <button data-seq="protein" data-i18n="br.seq.protein">Protein</button>
+          </div>
+          <select id="region-select" style="min-width:200px;"></select>
+          <button class="btn ghost small" id="btn-all-protein" data-i18n="br.all_protein">All proteins</button>
+        </div>
+
+        <div id="track" style="margin-top:14px;height:140px;"></div>
+        <div class="legend-row" id="track-legend"></div>
+      </div>
+
+      <div class="card sequence-card">
+        <div id="seq-empty" class="empty-hint" data-i18n="br.empty">Pick a sequence ID</div>
+        <div id="seq-display" style="display:none;">
+          <div class="header">
+            <div>
+              <div class="title" id="seq-title">-</div>
+              <div class="meta" id="seq-meta">-</div>
+            </div>
+            <div class="actions">
+              <button class="btn small secondary" id="btn-copy" data-i18n="br.copy">Copy</button>
+              <button class="btn small secondary" id="btn-download" data-i18n="br.download">Download</button>
+            </div>
+          </div>
+          <pre class="fasta" id="fasta"></pre>
+          <details class="highlight-panel" id="highlight-wrap" style="display:none;">
+            <summary data-i18n="br.highlight">Highlight in full sequence</summary>
+            <pre class="full-seq" id="full-seq"></pre>
+          </details>
+          <div id="protein-warn" style="display:none;color:#b45309;margin-top:10px;font-size:13px;" data-i18n="br.protein.warn"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block body_extra %}
+  <script src="{{ url_for('static', filename='js/sequence.js') }}?v={{ asset_v }}"></script>
+  <script src="{{ url_for('static', filename='js/browser.js') }}?v={{ asset_v }}"></script>
+{% endblock %}

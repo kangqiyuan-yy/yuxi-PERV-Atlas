@@ -1,0 +1,2016 @@
+{% extends "base.html" %}
+{% block container_class %}full{% endblock %}
+{% block content %}
+  <div style="display:flex;align-items:end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
+    <div>
+      <h2 class="section-title" data-i18n="gn.title">Genome Browser</h2>
+      <p class="section-subtitle" style="margin-bottom:0;" data-i18n="gn.subtitle">...</p>
+    </div>
+    {% if genome_ready %}
+    <div class="downloads">
+      <a class="download-item" href="/genome/data/genome.fa">
+        <span class="ext">FA</span>
+        <span data-i18n="gn.dl.fa">Reference FASTA (2.4 GB)</span>
+      </a>
+      <a class="download-item" href="/genome/data/genome.fa.fai">
+        <span class="ext">FAI</span>
+        <span data-i18n="gn.dl.fai">FASTA index</span>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if not genome_ready %}
+    <section class="card" style="border-left:4px solid var(--orange);">
+      <h3 style="margin-top:0;">⚠ <span data-i18n="gn.notready">Genome index not built</span></h3>
+      <p style="color:var(--muted);font-size:13px;">
+        <code>{{ genome_msg }}</code>
+      </p>
+      <p style="color:var(--muted);font-size:13px;" data-i18n="gn.notready.hint">
+        Run <code>python build_genome_index.py</code> on the server, then restart the service.
+      </p>
+    </section>
+  {% else %}
+    <div class="genome-page">
+      <div class="genome-main">
+        <section class="gn-toolbar">
+          <span class="label" data-i18n="gn.tool.region">Region</span>
+          <div class="chrom-picker" id="g-chrom-wrap">
+            <button type="button" class="chrom-btn" id="g-chrom-btn" aria-haspopup="listbox" aria-expanded="false">
+              <span id="g-chrom-label">—</span>
+              <span class="caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="chrom-menu" id="g-chrom-menu" role="listbox">
+              <div class="chrom-filter-wrap">
+                <input type="search" id="g-chrom-filter" data-i18n-ph="gn.chrom.filter.ph" placeholder="Filter scaffolds…" autocomplete="off" />
+              </div>
+              <ul class="chrom-list" id="g-chrom-list"></ul>
+            </div>
+          </div>
+          <input type="number" id="g-start" min="1" step="1" style="width:130px;" placeholder="start" />
+          <span style="color:var(--muted);">-</span>
+          <input type="number" id="g-end" min="1" step="1" style="width:130px;" placeholder="end" />
+          <button class="btn small" id="g-go" data-i18n="gn.tool.go">Go</button>
+
+          <span class="sep"></span>
+
+          <span class="label" data-i18n="gn.tool.search">Search</span>
+          <div style="position:relative;">
+            <input type="search" id="g-search" data-i18n-ph="gn.tool.search.ph" style="width:240px;" autocomplete="off" />
+            <ul id="g-search-results" class="autocomplete"></ul>
+          </div>
+
+          <span class="sep"></span>
+
+          <span class="label" data-i18n="gn.tool.gene_layout">Genes</span>
+          <div class="seg" role="group" id="g-gene-displaymode" aria-label="Gene layout">
+            <button type="button" data-mode="EXPANDED" class="active" data-i18n="gn.tool.gene_expanded">Expanded</button>
+            <button type="button" data-mode="SQUISHED" data-i18n="gn.tool.squished">Squished</button>
+            <button type="button" data-mode="COLLAPSED" data-i18n="gn.tool.collapsed">Collapsed</button>
+          </div>
+
+          <span class="sep"></span>
+
+          <span class="label" data-i18n="gn.tool.layout">Isoforms</span>
+          <div class="seg" role="group" id="g-displaymode" aria-label="Isoform layout">
+            <button type="button" data-mode="EXPANDED" class="active" data-i18n="gn.tool.expanded">Expanded</button>
+            <button type="button" data-mode="SQUISHED" data-i18n="gn.tool.squished">Squished</button>
+            <button type="button" data-mode="COLLAPSED" data-i18n="gn.tool.collapsed">Collapsed</button>
+          </div>
+
+          <span class="sep"></span>
+
+          <span class="label" data-i18n="gn.tool.strand">链颜色</span>
+          <div class="strand-tools">
+            <select id="g-color-track" title="Track">
+              <option value="ensembl-transcripts" data-i18n="gn.tool.track.tx">Transcripts</option>
+              <option value="ensembl-genes" data-i18n="gn.tool.track.gene">Genes</option>
+            </select>
+            <label class="strand-pick" title="+ strand color">
+              <span>+</span>
+              <input type="color" id="g-color-plus" value="#2563eb" />
+            </label>
+            <label class="strand-pick" title="- strand color">
+              <span>-</span>
+              <input type="color" id="g-color-minus" value="#2563eb" />
+            </label>
+            <label class="strand-link" title="Link plus/minus colors">
+              <input type="checkbox" id="g-color-link" checked />
+              <span data-i18n="gn.tool.strand.link">联动</span>
+            </label>
+          </div>
+
+          <span class="sep"></span>
+
+          <button class="btn small ghost" id="g-export-dna" data-i18n="gn.tool.export.dna">DNA</button>
+          <button class="btn small ghost" id="g-export-gtf" data-i18n="gn.tool.export.gtf">GTF</button>
+          <button class="btn small dlm-open-btn" id="g-download-viz" data-i18n="gn.dl_viz.btn">Download Viz</button>
+
+          <span class="sep"></span>
+
+          <button class="btn small" id="g-tracks-toggle" data-i18n="gn.tool.tracks">Tracks</button>
+          <button class="btn small mo-clear-btn" id="g-clear-mo-tracks"
+                  data-i18n="gn.tool.clear_mo_tracks" data-i18n-title="gn.tool.clear_mo_tracks.tip"
+                  title="Remove all multi-omics BigWig tracks (Alt+Shift+M)" disabled>
+            <span data-i18n="gn.tool.clear_mo_tracks">Clear MO Tracks</span>
+            <span class="mo-clear-badge" id="g-clear-mo-badge" hidden>0</span>
+          </button>
+          <button class="btn small homo-btn" id="g-homologous-toggle" data-i18n="gn.homo.btn">Homologous</button>
+          <button class="btn small ghost" id="g-reset-tracks" data-i18n="gn.tool.reset_tracks" title="Restore removed built-in tracks">Reset Tracks</button>
+
+          <span style="margin-left:auto;font-size:12px;color:var(--muted);" data-i18n="gn.tool.hint">
+            Drag to pan, wheel to zoom, click a feature for details.
+          </span>
+        </section>
+
+        <!-- PERV Sequences navigation panel -->
+        <section class="perv-panel" id="perv-panel">
+          <div class="perv-panel-toggle" id="perv-panel-toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="perv-panel-body">
+            <span class="perv-panel-icon" aria-hidden="true">&#9664;</span>
+            <span class="perv-panel-label" data-i18n="gn.perv.title">PERV Sequences</span>
+            <span class="perv-count-badge" id="perv-count-badge">47</span>
+            <span class="perv-panel-hint" data-i18n="gn.perv.hint">Click to browse all intact PERV loci</span>
+            <span class="perv-arrow" id="perv-arrow" aria-hidden="true">&#9660;</span>
+          </div>
+          <div class="perv-panel-body" id="perv-panel-body" aria-hidden="true">
+            <div class="perv-loading" id="perv-loading" data-i18n="gn.perv.loading">Loading…</div>
+          </div>
+        </section>
+
+        <section class="igv-shell">
+          <div class="igv-header">
+            <div class="left">
+              <span class="dot" aria-hidden="true"></span>
+              <span data-i18n="gn.shell.title">Sus scrofa Sscrofa11.1 / Ensembl 108</span>
+            </div>
+            <div class="right" id="g-locus-display" style="font:600 12px ui-monospace,'SFMono-Regular',monospace;color:var(--text);">
+              —
+            </div>
+          </div>
+          <div id="igv-container"></div>
+        </section>
+      </div>
+
+      <!-- Multi-omics Tracks drawer (overlay, slides in from right) -->
+      <div class="tracks-mask" id="g-tracks-mask" aria-hidden="true"></div>
+      <aside class="tracks-drawer" id="g-tracks-drawer" aria-hidden="true">
+        <div class="tracks-drawer-head">
+          <h3 data-i18n="gn.tracks.title">Multi-omics Tracks</h3>
+          <button class="btn small ghost" id="g-tracks-close" aria-label="Close">&#x2715;</button>
+        </div>
+        <p class="tracks-drawer-hint" data-i18n="gn.tracks.hint">Check a file to load it as a signal track in the browser.</p>
+        <div class="tracks-progress" id="g-tracks-progress" hidden role="status" aria-live="polite">
+          <span class="tracks-progress-spinner" aria-hidden="true"></span>
+          <span class="tracks-progress-label" id="g-tracks-progress-label"></span>
+        </div>
+        <div class="tracks-body" id="g-tracks-body">
+          <div class="tracks-loading" data-i18n="gn.tracks.loading">Loading…</div>
+        </div>
+      </aside>
+
+      <!-- Homologous drawer (overlay, slides in from right) -->
+      <div class="homo-mask" id="g-homo-mask" aria-hidden="true"></div>
+      <aside class="homo-drawer" id="g-homo-drawer" aria-hidden="true">
+        <div class="homo-drawer-head">
+          <h3 data-i18n="gn.homo.title">PERV Homologous</h3>
+          <button class="btn small ghost" id="g-homo-close" aria-label="Close">&#x2715;</button>
+        </div>
+        <p class="homo-drawer-hint" data-i18n="gn.homo.hint">876 homologous sequences across 188 loci</p>
+
+        <!-- View toggle tabs -->
+        <div class="homo-view-tabs" role="tablist">
+          <button class="homo-tab active" id="homo-tab-seq" role="tab" aria-selected="true" data-i18n="gn.homo.tab.seq">Sequences</button>
+          <button class="homo-tab" id="homo-tab-locus" role="tab" aria-selected="false" data-i18n="gn.homo.tab.locus">Loci</button>
+        </div>
+
+        <!-- ── Sequences view ── -->
+        <div id="homo-seq-view">
+          <!-- Filter bar -->
+          <div class="homo-filter-bar">
+            <input class="homo-search" id="homo-seq-search" type="search"
+                   placeholder="Search sequence ID…" data-i18n-placeholder="gn.homo.search" />
+            <div class="homo-filter-row">
+              <select class="homo-select" id="homo-filter-species" title="Species">
+                <option value="" data-i18n="gn.homo.filter.all_species">All Species</option>
+              </select>
+              <select class="homo-select" id="homo-filter-chr" title="Chromosome">
+                <option value="" data-i18n="gn.homo.filter.all_chr">All Chr</option>
+              </select>
+              <select class="homo-select" id="homo-filter-group" title="Group">
+                <option value="" data-i18n="gn.homo.filter.all_group">All Groups</option>
+              </select>
+              <select class="homo-select" id="homo-filter-locus" title="Locus ID">
+                <option value="" data-i18n="gn.homo.filter.all_locus">All Loci</option>
+              </select>
+            </div>
+            <div class="homo-filter-count" id="homo-seq-count"></div>
+          </div>
+          <div class="homo-list" id="homo-seq-list">
+            <div class="homo-loading" data-i18n="gn.homo.loading">Loading…</div>
+          </div>
+        </div>
+
+        <!-- ── Loci view ── -->
+        <div id="homo-locus-view" hidden>
+          <div class="homo-filter-bar">
+            <input class="homo-search" id="homo-locus-search" type="search"
+                   placeholder="Search locus ID…" data-i18n-placeholder="gn.homo.locus.search" />
+            <div class="homo-filter-count" id="homo-locus-count"></div>
+          </div>
+          <div class="homo-list" id="homo-locus-list">
+            <div class="homo-loading" data-i18n="gn.homo.loading">Loading…</div>
+          </div>
+        </div>
+
+        <!-- ── In-drawer detail panel (replaces list when item clicked) ── -->
+        <div id="homo-detail-view" hidden>
+          <div class="homo-filter-bar" style="flex-shrink:0;padding:8px 14px;">
+            <button class="btn small ghost" id="homo-detail-back" style="display:flex;align-items:center;gap:6px;font-size:12px;">
+              &#8592; <span data-i18n="gn.homo.detail.back">Back to list</span>
+            </button>
+          </div>
+          <div class="homo-list" id="homo-detail-body" style="overflow-y:auto;flex:1;padding:14px 16px;"></div>
+        </div>
+      </aside>
+
+      <aside class="genome-side">
+        <section class="detail-card" id="g-detail-card">
+          <div class="head">
+            <h3>
+              <span class="badge-icon" aria-hidden="true">i</span>
+              <span data-i18n="gn.detail.title">Region detail</span>
+            </h3>
+            <button class="btn small ghost" id="g-detail-clear" type="button" data-i18n="gn.detail.clear">Clear</button>
+          </div>
+          <div class="body" id="g-detail-body">
+            <div class="empty" data-i18n="gn.detail.empty">Click any gene / transcript / exon in the track on the left.
+All alternative-splicing isoforms of the selected gene will appear here.</div>
+          </div>
+          <div class="dna-foot" style="display:none;" id="g-dna-wrap">
+            <details>
+              <summary>
+                <span data-i18n="gn.detail.dna">View DNA of current view (≤100 kb)</span>
+                <span aria-hidden="true">▾</span>
+              </summary>
+              <pre class="dna" id="g-dna"></pre>
+            </details>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- ──────────── Multi-omics Visualization Download Modal ──────────── -->
+    <div class="dlm-overlay" id="dlm-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="dlm-title">
+      <div class="dlm-dialog">
+
+        <div class="dlm-header">
+          <h2 class="dlm-title" id="dlm-title" data-i18n="gn.dl_viz.title">Download Multi-omics Visualization</h2>
+          <button class="btn small ghost dlm-close-btn" id="dlm-close" aria-label="Close">&#x2715;</button>
+        </div>
+
+        <div class="dlm-body" id="dlm-body">
+
+          <!-- Engine selector -->
+          <section class="dlm-step dlm-engine-step">
+            <div class="dlm-step-head">
+              <span class="dlm-step-num">0</span>
+              <h3 data-i18n="gn.dl_viz.engine">Rendering Engine</h3>
+            </div>
+            <div class="dlm-engine-row">
+              <label class="dlm-radio-label dlm-radio-label-recommended">
+                <input type="radio" name="dlm-engine" value="pygt" checked />
+                <span class="dlm-fmt-badge">pyGenomeTracks</span>
+                <span class="dlm-engine-recommend" data-i18n-title="gn.dl_viz.engine.recommended" title="推荐引擎">👍</span>
+                <span class="dlm-fmt-desc" data-i18n="gn.dl_viz.engine.pygt.desc">All tracks in one figure with custom colours / order / heights.</span>
+              </label>
+              <label class="dlm-radio-label">
+                <input type="radio" name="dlm-engine" value="matplotlib" />
+                <span class="dlm-fmt-badge">matplotlib</span>
+                <span class="dlm-fmt-desc" data-i18n="gn.dl_viz.engine.matplotlib.desc">Per-track stacked figures.</span>
+              </label>
+            </div>
+          </section>
+
+          <!-- Step 1: Region -->
+          <section class="dlm-step">
+            <div class="dlm-step-head">
+              <span class="dlm-step-num">1</span>
+              <h3 data-i18n="gn.dl_viz.step1">Genomic Region</h3>
+            </div>
+
+            <div class="dlm-source-wrap">
+              <span class="dlm-label" data-i18n="gn.dl_viz.source">Source</span>
+              <div class="dlm-source-tabs" id="dlm-source-tabs" role="tablist">
+                <button class="dlm-src-tab active" data-src="gene"        role="tab" aria-selected="true"  data-i18n="gn.dl_viz.src.gene">Gene</button>
+                <button class="dlm-src-tab"        data-src="transcript"  role="tab" aria-selected="false" data-i18n="gn.dl_viz.src.transcript">Transcript</button>
+                <button class="dlm-src-tab"        data-src="perv"        role="tab" aria-selected="false" data-i18n="gn.dl_viz.src.perv">PERV</button>
+                <button class="dlm-src-tab"        data-src="homo_seq"    role="tab" aria-selected="false" data-i18n="gn.dl_viz.src.homo_seq">Homo Seq</button>
+                <button class="dlm-src-tab"        data-src="homo_locus"  role="tab" aria-selected="false" data-i18n="gn.dl_viz.src.homo_locus">Homo Locus</button>
+                <button class="dlm-src-tab"        data-src="custom"      role="tab" aria-selected="false" data-i18n="gn.dl_viz.src.custom">Custom</button>
+                <button class="dlm-src-tab"        data-src="position"    role="tab" aria-selected="false" data-i18n="gn.dl_viz.src.position">Position</button>
+              </div>
+            </div>
+
+            <!-- Gene search -->
+            <div class="dlm-src-panel" id="dlm-src-gene">
+              <div style="position:relative;">
+                <input type="search" id="dlm-gene-search" class="dlm-input dlm-search-wide"
+                       data-i18n-ph="gn.dl_viz.search.ph" placeholder="Search gene name or ID…" autocomplete="off" />
+                <ul class="dlm-autocomplete" id="dlm-gene-results"></ul>
+              </div>
+            </div>
+
+            <!-- Transcript search -->
+            <div class="dlm-src-panel" id="dlm-src-transcript" hidden>
+              <div style="position:relative;">
+                <input type="search" id="dlm-tx-search" class="dlm-input dlm-search-wide"
+                       data-i18n-ph="gn.dl_viz.tx.ph" placeholder="Search transcript ID…" autocomplete="off" />
+                <ul class="dlm-autocomplete" id="dlm-tx-results"></ul>
+              </div>
+            </div>
+
+            <!-- PERV list -->
+            <div class="dlm-src-panel" id="dlm-src-perv" hidden>
+              <input type="search" id="dlm-perv-filter" class="dlm-input dlm-search-wide"
+                     data-i18n-ph="gn.dl_viz.perv.ph" placeholder="Search PERV name…" autocomplete="off" />
+              <ul class="dlm-item-list" id="dlm-perv-list"><li class="dlm-list-loading" data-i18n="gn.dl_viz.loading">Loading…</li></ul>
+            </div>
+
+            <!-- Homologous sequence list -->
+            <div class="dlm-src-panel" id="dlm-src-homo_seq" hidden>
+              <input type="search" id="dlm-homo-seq-filter" class="dlm-input dlm-search-wide"
+                     data-i18n-ph="gn.dl_viz.homo_seq.ph" placeholder="Search homologous sequence ID…" autocomplete="off" />
+              <ul class="dlm-item-list" id="dlm-homo-seq-list"><li class="dlm-list-loading" data-i18n="gn.dl_viz.loading">Loading…</li></ul>
+            </div>
+
+            <!-- Homologous locus list -->
+            <div class="dlm-src-panel" id="dlm-src-homo_locus" hidden>
+              <input type="search" id="dlm-homo-locus-filter" class="dlm-input dlm-search-wide"
+                     data-i18n-ph="gn.dl_viz.homo_locus.ph" placeholder="Search locus ID…" autocomplete="off" />
+              <ul class="dlm-item-list" id="dlm-homo-locus-list"><li class="dlm-list-loading" data-i18n="gn.dl_viz.loading">Loading…</li></ul>
+            </div>
+
+            <!-- Custom region -->
+            <div class="dlm-src-panel" id="dlm-src-custom" hidden>
+              <div class="dlm-coord-row">
+                <div class="dlm-field">
+                  <label class="dlm-label" data-i18n="gn.dl_viz.chrom">Chromosome</label>
+                  <select id="dlm-custom-chrom" class="dlm-select"><option value="">— select —</option></select>
+                </div>
+                <div class="dlm-field">
+                  <label class="dlm-label" data-i18n="gn.dl_viz.start">Start (bp)</label>
+                  <input type="number" id="dlm-custom-start" class="dlm-input" min="1" step="1" placeholder="1" style="width:110px;" />
+                </div>
+                <div class="dlm-field">
+                  <label class="dlm-label" data-i18n="gn.dl_viz.end">End (bp)</label>
+                  <input type="number" id="dlm-custom-end" class="dlm-input" min="1" step="1" placeholder="100000" style="width:110px;" />
+                </div>
+                <button class="btn small" id="dlm-custom-go">Go</button>
+              </div>
+            </div>
+
+            <!-- Single position -->
+            <div class="dlm-src-panel" id="dlm-src-position" hidden>
+              <div class="dlm-coord-row">
+                <div class="dlm-field">
+                  <label class="dlm-label" data-i18n="gn.dl_viz.chrom">Chromosome</label>
+                  <select id="dlm-pos-chrom" class="dlm-select"><option value="">— select —</option></select>
+                </div>
+                <div class="dlm-field">
+                  <label class="dlm-label" data-i18n="gn.dl_viz.pos">Position (bp)</label>
+                  <input type="number" id="dlm-pos-pos" class="dlm-input" min="1" step="1" placeholder="1000000" style="width:110px;" />
+                </div>
+                <div class="dlm-field">
+                  <label class="dlm-label" data-i18n="gn.dl_viz.window">Window (bp)</label>
+                  <input type="number" id="dlm-pos-window" class="dlm-input" min="100" step="1000" value="10000" style="width:100px;" />
+                </div>
+                <button class="btn small" id="dlm-pos-go">Go</button>
+              </div>
+            </div>
+
+            <!-- Region preview -->
+            <div class="dlm-preview" id="dlm-preview" hidden>
+              <span class="dlm-preview-dot"></span>
+              <span id="dlm-preview-text" style="font-family:ui-monospace,monospace;font-size:12px;"></span>
+            </div>
+          </section>
+
+          <!-- Step 2: Extension -->
+          <section class="dlm-step">
+            <div class="dlm-step-head">
+              <span class="dlm-step-num">2</span>
+              <h3 data-i18n="gn.dl_viz.step2">Extend Region</h3>
+              <label class="dlm-inline-check">
+                <input type="checkbox" id="dlm-extend-on" />
+                <span data-i18n="gn.dl_viz.extend.enable">Apply extension</span>
+              </label>
+            </div>
+            <div class="dlm-extend-fields" id="dlm-extend-fields" hidden>
+              <div class="dlm-field">
+                <label class="dlm-label" for="dlm-upstream" data-i18n="gn.dl_viz.upstream">Upstream (bp)</label>
+                <input type="number" id="dlm-upstream" class="dlm-input" min="0" step="1000" value="0" style="width:120px;" />
+              </div>
+              <div class="dlm-field">
+                <label class="dlm-label" for="dlm-downstream" data-i18n="gn.dl_viz.downstream">Downstream (bp)</label>
+                <input type="number" id="dlm-downstream" class="dlm-input" min="0" step="1000" value="0" style="width:120px;" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Step 3: Multi-omics Tracks -->
+          <section class="dlm-step">
+            <div class="dlm-step-head">
+              <span class="dlm-step-num">3</span>
+              <h3 data-i18n="gn.dl_viz.step3">Multi-omics Tracks</h3>
+            </div>
+            <!-- hint text differs by engine -->
+            <p class="dlm-hint dlm-mpl-only" data-i18n="gn.dl_viz.step3_hint">Each selected track generates a separate output file.</p>
+            <p class="dlm-hint dlm-pygt-only" hidden data-i18n="gn.dl_viz.step3_hint_pygt">All selected tracks will be combined into one figure.</p>
+            <div id="dlm-tracks-body">
+              <div class="dlm-loading" data-i18n="gn.dl_viz.loading">Loading…</div>
+            </div>
+          </section>
+
+          <!-- Step 4: Annotation Tracks (matplotlib only) -->
+          <section class="dlm-step dlm-mpl-only" id="dlm-mpl-annot-step">
+            <div class="dlm-step-head">
+              <span class="dlm-step-num">4</span>
+              <h3 data-i18n="gn.dl_viz.step4">Annotation Tracks</h3>
+            </div>
+            <div class="dlm-annot-row">
+              <label class="dlm-check-label">
+                <input type="checkbox" name="dlm-annot" value="genes" checked />
+                <span data-i18n="gn.dl_viz.annot.genes">Genes</span>
+              </label>
+              <label class="dlm-check-label">
+                <input type="checkbox" name="dlm-annot" value="transcripts" />
+                <span data-i18n="gn.dl_viz.annot.transcripts">Transcripts</span>
+              </label>
+              <label class="dlm-check-label">
+                <input type="checkbox" name="dlm-annot" value="perv" />
+                <span data-i18n="gn.dl_viz.annot.perv">PERV</span>
+              </label>
+              <label class="dlm-check-label">
+                <input type="checkbox" name="dlm-annot" value="homo_seq" />
+                <span data-i18n="gn.dl_viz.annot.homo_seq">Homologous Seq</span>
+              </label>
+              <label class="dlm-check-label">
+                <input type="checkbox" name="dlm-annot" value="homo_loci" />
+                <span data-i18n="gn.dl_viz.annot.homo_loci">Homologous Loci</span>
+              </label>
+            </div>
+          </section>
+
+          <!-- Step 5: Format -->
+          <section class="dlm-step">
+            <div class="dlm-step-head">
+              <span class="dlm-step-num">5</span>
+              <h3 data-i18n="gn.dl_viz.step5">Output Format</h3>
+            </div>
+            <div class="dlm-fmt-row">
+              <label class="dlm-radio-label">
+                <input type="radio" name="dlm-fmt" value="pdf" checked />
+                <span class="dlm-fmt-badge">PDF</span>
+                <span class="dlm-fmt-desc" data-i18n="gn.dl_viz.fmt.pdf.desc">Vector, high quality</span>
+              </label>
+              <label class="dlm-radio-label">
+                <input type="radio" name="dlm-fmt" value="svg" />
+                <span class="dlm-fmt-badge">SVG</span>
+                <span class="dlm-fmt-desc" data-i18n="gn.dl_viz.fmt.svg.desc">Scalable vector</span>
+              </label>
+              <label class="dlm-radio-label">
+                <input type="radio" name="dlm-fmt" value="png" />
+                <span class="dlm-fmt-badge">PNG</span>
+                <span class="dlm-fmt-desc" data-i18n="gn.dl_viz.fmt.png.desc">Raster, 150 dpi</span>
+              </label>
+            </div>
+          </section>
+
+          <!-- pyGenomeTracks options (only visible when engine=pygt) -->
+          <section class="dlm-step dlm-pygt-step" id="dlm-pygt-section" hidden>
+            <div class="dlm-step-head">
+              <span class="dlm-step-num">6</span>
+              <h3 data-i18n="gn.dl_viz.pygt.title">pyGenomeTracks Customisation</h3>
+            </div>
+
+            <div class="dlm-pygt-hint" data-i18n="gn.dl_viz.pygt.hint">
+              Drag rows to reorder, click the colour swatch to change colours, adjust per-track height.
+            </div>
+
+            <div id="dlm-pygt-tracks" class="dlm-pygt-tracks">
+              <div class="dlm-tracks-empty" data-i18n="gn.dl_viz.pygt.no_tracks_selected">
+                No tracks selected yet — pick BigWig files in Step 3.
+              </div>
+            </div>
+
+            <div class="dlm-pygt-grid">
+              <div class="dlm-field">
+                <label class="dlm-label" data-i18n="gn.dl_viz.pygt.fontsize">Font size</label>
+                <input type="number" id="dlm-pygt-fontsize" class="dlm-input" min="6" max="24" step="1" value="12" style="width:80px;" />
+              </div>
+              <div class="dlm-field">
+                <label class="dlm-label" data-i18n="gn.dl_viz.pygt.label_fraction">Track label width</label>
+                <input type="number" id="dlm-pygt-label-frac" class="dlm-input" min="0.05" max="0.40" step="0.01" value="0.25" style="width:80px;" />
+              </div>
+              <div class="dlm-field">
+                <label class="dlm-label" data-i18n="gn.dl_viz.pygt.bins">Bins</label>
+                <input type="number" id="dlm-pygt-bins" class="dlm-input" min="100" max="5000" step="50" value="700" style="width:100px;" />
+              </div>
+              <div class="dlm-field">
+                <label class="dlm-label" data-i18n="gn.dl_viz.pygt.title_label">Annotation title</label>
+                <input type="text" id="dlm-pygt-interval-title" class="dlm-input" maxlength="80" placeholder="e.g. RF1-132.023M" style="width:200px;" />
+              </div>
+            </div>
+
+            <div class="dlm-annot-row" style="margin-top:8px;">
+              <label class="dlm-check-label">
+                <input type="checkbox" id="dlm-pygt-show-range" checked />
+                <span data-i18n="gn.dl_viz.pygt.show_range">Show signal range</span>
+              </label>
+              <label class="dlm-check-label">
+                <input type="checkbox" id="dlm-pygt-perv" checked />
+                <span data-i18n="gn.dl_viz.pygt.perv">PERV structure (lLTR/coding/rLTR)</span>
+              </label>
+              <label class="dlm-check-label">
+                <input type="checkbox" id="dlm-pygt-genes" checked />
+                <span data-i18n="gn.dl_viz.pygt.genes">Genes (whole genome, UCSC)</span>
+              </label>
+              <label class="dlm-check-label">
+                <input type="checkbox" id="dlm-pygt-transcripts" />
+                <span data-i18n="gn.dl_viz.pygt.transcripts">Transcripts (BED12)</span>
+              </label>
+              <label class="dlm-check-label">
+                <input type="checkbox" id="dlm-pygt-clip-genes" checked />
+                <span data-i18n="gn.dl_viz.pygt.clip_genes">只显示绘图区域内的完整基因 / 转录本</span>
+              </label>
+            </div>
+
+            <!-- Transcripts display sub-option (visible only when transcripts checked) -->
+            <div id="dlm-pygt-tx-opts" class="dlm-pygt-tx-opts" hidden>
+              <span class="dlm-label" data-i18n="gn.dl_viz.pygt.tx_display">Display mode:</span>
+              <label class="dlm-radio-label dlm-radio-sm">
+                <input type="radio" name="dlm-pygt-tx-display" value="collapsed" checked />
+                <span class="dlm-fmt-desc" data-i18n="gn.dl_viz.pygt.tx_collapsed">Collapsed — same-gene isoforms merged, gene labels shown</span>
+              </label>
+              <label class="dlm-radio-label dlm-radio-sm">
+                <input type="radio" name="dlm-pygt-tx-display" value="stacked" />
+                <span class="dlm-fmt-desc" data-i18n="gn.dl_viz.pygt.tx_stacked">Stacked — separate row per isoform</span>
+              </label>
+            </div>
+          </section>
+
+          <!-- pyGenomeTracks result panel -->
+          <section class="dlm-step dlm-pygt-result" id="dlm-pygt-result" hidden>
+            <div class="dlm-step-head">
+              <h3 data-i18n="gn.dl_viz.pygt.result">Render Result</h3>
+            </div>
+            <div id="dlm-pygt-status" class="dlm-pygt-status"></div>
+            <div id="dlm-pygt-warnings" class="dlm-pygt-warnings" hidden></div>
+            <div class="dlm-pygt-actions" id="dlm-pygt-actions" hidden>
+              <button class="btn small" id="dlm-pygt-dl-image" type="button" data-i18n="gn.dl_viz.pygt.dl_image">Download image</button>
+              <button class="btn small ghost" id="dlm-pygt-dl-ini" type="button" data-i18n="gn.dl_viz.pygt.dl_ini">Download .ini</button>
+              <button class="btn small ghost" id="dlm-pygt-toggle-ini" type="button" data-i18n="gn.dl_viz.pygt.show_ini">Show .ini</button>
+            </div>
+            <pre id="dlm-pygt-ini-preview" class="dlm-pygt-ini" hidden></pre>
+          </section>
+
+        </div><!-- /dlm-body -->
+
+        <div class="dlm-footer">
+          <span class="dlm-err" id="dlm-err"></span>
+          <div class="dlm-footer-btns">
+            <button class="btn ghost small" id="dlm-cancel" data-i18n="gn.dl_viz.cancel">Cancel</button>
+            <button class="btn small dlm-generate-btn" id="dlm-generate" data-i18n="gn.dl_viz.generate">Generate &amp; Download</button>
+          </div>
+        </div>
+
+      </div><!-- /dlm-dialog -->
+    </div><!-- /dlm-overlay -->
+
+  {% endif %}
+{% endblock %}
+
+{% block head_extra %}
+  <style>
+    .autocomplete {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      list-style: none;
+      margin: 4px 0 0;
+      padding: 0;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow-lg);
+      z-index: 30;
+      max-height: 360px;
+      overflow: auto;
+      display: none;
+      width: 560px;   /* fixed width so all columns fit */
+    }
+    .autocomplete li {
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      display: grid;
+      /* [pill]  [gene name]  [Ensembl ID · biotype]  [chrom:pos] */
+      grid-template-columns: auto auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+    }
+    .autocomplete li:hover, .autocomplete li.active { background: var(--primary-soft); color: var(--primary-dark); }
+    .autocomplete li .meta { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .autocomplete li .pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 1px 7px; border-radius: 999px;
+      font-size: 10px; font-weight: 600;
+      background: var(--primary-soft); color: var(--primary-dark);
+      border: 1px solid var(--primary-border);
+      letter-spacing: 0.04em; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .autocomplete li .pill.tx { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
+    /* .left is no longer used as a wrapper — flatten the grid */
+    .autocomplete li .left { display: contents; }
+    .autocomplete li .name {
+      font-weight: 600; color: var(--text);
+      white-space: nowrap;   /* gene symbols are short; always show in full */
+    }
+    .autocomplete li .meta.loc {
+      /* coordinates column — right-aligned, never truncated */
+      text-align: right;
+      white-space: nowrap;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    /* inner meta (Ensembl ID · biotype) can truncate if needed */
+    .autocomplete li .left .meta {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .seg button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      border-right: 1px solid var(--border);
+      transition: background .15s, color .15s;
+    }
+    .seg button:last-child { border-right: 0; }
+    .seg button:hover { background: var(--primary-soft); color: var(--primary-dark); }
+    .seg button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .strand-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .strand-tools select {
+      height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      font-size: 12px;
+      padding: 0 8px;
+    }
+    .strand-pick {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 3px 6px;
+    }
+    .strand-pick input[type="color"] {
+      width: 24px;
+      height: 20px;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+    }
+    .strand-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      user-select: none;
+    }
+
+    /* Custom chromosome picker (replaces the native <select>, whose long
+       option list could be rendered as a solid black overlay on certain
+       OS/desktop themes or remote desktop sessions). */
+    .chrom-picker { position: relative; display: inline-block; }
+    .chrom-btn {
+      appearance: none;
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 13px;
+      min-width: 140px;
+      text-align: left;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .chrom-btn:hover { border-color: var(--primary); }
+    .chrom-btn .caret { color: var(--muted); font-size: 11px; }
+    .chrom-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow-lg);
+      width: 320px;
+      z-index: 9000;
+      display: none;
+      overflow: hidden;
+    }
+    .chrom-picker.open .chrom-menu { display: flex; flex-direction: column; }
+    .chrom-filter-wrap {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      background: #f8fafc;
+    }
+    .chrom-filter-wrap input {
+      width: 100%;
+      padding: 6px 10px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+    }
+    .chrom-filter-wrap input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+    .chrom-list {
+      list-style: none;
+      margin: 0;
+      padding: 4px 0;
+      max-height: 360px;
+      overflow: auto;
+    }
+    .chrom-list li {
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--text);
+      background: #fff;
+    }
+    .chrom-list li:hover, .chrom-list li.active {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+    .chrom-list li.section {
+      cursor: default;
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .chrom-list li.section.muted {
+      background: transparent;
+      font-style: italic;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      font-weight: 500;
+    }
+    .chrom-list li .meta { color: var(--muted); font-size: 11px; }
+
+    /* ---- Tracks drawer --------------------------------------------------- */
+    .tracks-mask {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.35);
+      z-index: 1000;
+    }
+    .tracks-mask.open { display: block; }
+
+    .tracks-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 420px;
+      max-width: 95vw;
+      height: 100vh;
+      background: #fff;
+      border-left: 1px solid var(--border);
+      box-shadow: -4px 0 24px rgba(0,0,0,.12);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform .25s cubic-bezier(.4,0,.2,1);
+    }
+    .tracks-drawer.open { transform: translateX(0); }
+
+    .tracks-drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg,#f8fafc,#eef2ff);
+      flex-shrink: 0;
+    }
+    .tracks-drawer-head h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .tracks-drawer-hint {
+      margin: 0;
+      padding: 8px 18px 0;
+      font-size: 12px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    /* ── Global search bar ───────────────────────────────────────── */
+    .mo-global-bar {
+      flex-shrink: 0;
+      padding: 10px 12px 6px;
+      border-bottom: 2px solid var(--border);
+      background: linear-gradient(180deg, #f0f4ff, #f8fafc);
+    }
+    .mo-global-search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0 8px;
+      margin-bottom: 8px;
+      transition: border-color .15s;
+    }
+    .mo-global-search-wrap:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+    }
+    .mo-global-search-icon { font-size: 13px; color: var(--muted); flex-shrink: 0; }
+    .mo-global-search {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 13px;
+      padding: 7px 4px;
+      background: transparent;
+      color: var(--text);
+      min-width: 0;
+    }
+    .mo-global-search::placeholder { color: var(--muted); }
+    .mo-global-clear {
+      border: none; background: none; cursor: pointer;
+      color: var(--muted); font-size: 13px; padding: 2px 4px;
+      border-radius: 4px; flex-shrink: 0;
+    }
+    .mo-global-clear:hover { background: #fee2e2; color: #dc2626; }
+    .mo-global-count {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 2px 0 0;
+      letter-spacing: .01em;
+    }
+
+    .tracks-body {
+      flex: 1;
+      overflow-y: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      min-height: 0;
+    }
+    .tracks-loading { color: var(--muted); font-size: 13px; padding: 12px 18px; }
+
+    /* Recommended section: fixed-height, no extra decoration */
+    .mo-recommended-top {
+      flex-shrink: 0;
+      padding: 8px 14px 0;
+    }
+
+    /* All-tracks section: takes remaining space, scrollable */
+    .mo-cats-section {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid var(--border);
+      margin-top: 6px;
+    }
+    .mo-cats-section-label { display: none; }
+    .mo-cats-scroll {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      padding: 4px 14px 20px;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 transparent;
+    }
+    .mo-cats-scroll::-webkit-scrollbar { width: 6px; }
+    .mo-cats-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 999px;
+    }
+    .mo-cats-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* Global search bar: no longer needs bottom padding separation */
+    .mo-global-bar { border-bottom: 1px solid var(--border); }
+
+    /* Category block */
+    .tracks-cat { margin-bottom: 6px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .tracks-cat summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      background: var(--panel);
+      user-select: none;
+    }
+    .tracks-cat summary::-webkit-details-marker { display: none; }
+    .tracks-cat summary .cat-caret { font-size: 11px; color: var(--muted); transition: transform .15s; }
+    .tracks-cat[open] summary .cat-caret { transform: rotate(90deg); }
+    .tracks-cat summary .cat-badge {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 1px 7px;
+    }
+    .tracks-cat summary .cat-left { display: flex; align-items: center; gap: 8px; }
+    .tracks-cat summary .cat-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* ── Recommended: same shell as tracks-cat; nested groups inside ─── */
+    .tracks-drawer .mo-recommended-panel {
+      border-top: 1px solid var(--border);
+      background: transparent;
+      padding: 6px 8px 8px 8px;
+    }
+    .tracks-drawer .mo-recommended-inner {
+      max-height: 220px;
+      height: 220px;
+      overflow-y: scroll;
+      overscroll-behavior: contain;
+      padding: 2px 4px 2px 0;
+      scrollbar-width: thin;
+      scrollbar-color: #94a3b8 #e2e8f0;
+    }
+    .tracks-drawer .mo-recommended-inner:focus {
+      outline: none;
+      box-shadow: inset 0 0 0 2px rgba(99, 102, 241, 0.15);
+      border-radius: 6px;
+    }
+    .tracks-drawer .mo-recommended-inner::-webkit-scrollbar { width: 8px; }
+    .tracks-drawer .mo-recommended-inner::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 999px;
+    }
+    .tracks-drawer .mo-recommended-inner::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 999px;
+    }
+    .tracks-drawer .mo-recommended-inner::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    /* Level 2 groups — slightly compact, nested under Recommended */
+    .tracks-drawer .mo-rec-group {
+      margin-bottom: 4px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel, #fff);
+      overflow: hidden;
+    }
+    .tracks-drawer .mo-rec-group > summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      background: var(--panel, #fff);
+      user-select: none;
+    }
+    .tracks-drawer .mo-rec-group > summary::-webkit-details-marker { display: none; }
+    .tracks-drawer .mo-rec-group > summary .cat-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+    .tracks-drawer .mo-rec-group > summary .cat-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      opacity: 0.85;
+    }
+    .tracks-drawer .mo-rec-group > summary .cat-badge {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 1px 6px;
+    }
+    .tracks-drawer .mo-rec-group > summary .cat-caret {
+      font-size: 10px;
+      color: #94a3b8;
+      transition: transform .15s;
+    }
+    .tracks-drawer .mo-rec-group[open] > summary {
+      background: var(--surface2, #f8fafc);
+      border-bottom: 1px solid var(--border);
+    }
+    .tracks-drawer .mo-rec-group[open] > summary .cat-caret { transform: rotate(90deg); }
+    .tracks-drawer .mo-rec-group .mo-filter-bar {
+      background: #fafafa;
+      border-bottom: 1px solid #eef2f7;
+    }
+    .tracks-drawer .mo-rec-group .tracks-file-list {
+      max-height: 160px;
+      overflow-y: scroll;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+    }
+
+    .tracks-file-list { padding: 4px 0 8px; }
+    .tracks-file-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 7px 14px;
+      font-size: 12.5px;
+      color: var(--text);
+      cursor: pointer;
+      transition: background .1s;
+      border-radius: 6px;
+      margin: 1px 6px;
+    }
+    .tracks-file-item:hover { background: var(--primary-soft); }
+    .tracks-file-item input[type="checkbox"] { flex-shrink: 0; cursor: pointer; accent-color: var(--primary); margin-top: 2px; }
+    .tracks-file-item .tf-name { flex: 1; min-width: 0; word-break: break-word; overflow-wrap: break-word; white-space: normal; line-height: 1.5; }
+    .tracks-file-item .tf-size { flex-shrink: 0; margin-top: 2px; }
+    .tracks-file-item .tf-autoscale { flex-shrink: 0; margin-top: 2px; }
+    .tracks-file-item .tf-size { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+    .tracks-file-item .tf-autoscale {
+      font-size: 10px; flex-shrink: 0; cursor: pointer;
+      padding: 2px 8px; border-radius: 999px;
+      border: 1px solid #d1d5db;
+      background: #f3f4f6;
+      color: #6b7280;
+      font-weight: 600;
+      user-select: none;
+      transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
+    }
+    .tracks-file-item .tf-autoscale.on {
+      background: #e0e7ff;
+      color: #4338ca;
+      border-color: #a5b4fc;
+      box-shadow: 0 0 0 2px rgba(99,102,241,.12);
+    }
+    .tracks-file-item.loading { opacity: .7; pointer-events: none; position: relative; }
+    .tracks-file-item.loading .tf-name::after {
+      content: '';
+      display: inline-block;
+      width: 11px; height: 11px;
+      margin-left: 6px;
+      vertical-align: -1px;
+      border: 2px solid var(--primary, #2563eb);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: tracks-spin .7s linear infinite;
+    }
+    @keyframes tracks-spin { to { transform: rotate(360deg); } }
+    /* Global multi-omics load progress banner (covers checkbox / Load all / preselect) */
+    .tracks-progress {
+      display: flex; align-items: center; gap: 8px;
+      margin: 0 14px 8px; padding: 7px 10px;
+      background: var(--primary-soft, #eef2ff);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px; font-weight: 600; color: var(--text);
+    }
+    .tracks-progress[hidden] { display: none; }
+    .tracks-progress-spinner {
+      width: 13px; height: 13px; flex-shrink: 0;
+      border: 2px solid var(--primary, #2563eb);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: tracks-spin .7s linear infinite;
+    }
+    .tracks-empty { color: var(--muted); font-size: 12px; padding: 6px 14px; font-style: italic; }
+
+    /* ── Multi-omics filter bar ─────────────────────────────────────────── */
+    .mo-filter-bar {
+      padding: 8px 10px 4px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2, #f8fafc);
+    }
+    .mo-filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .mo-filter-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .mo-filter-select {
+      font-size: 11px;
+      padding: 2px 6px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      max-width: 110px;
+    }
+    .mo-filter-select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+    .mo-filter-reset {
+      font-size: 10px;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: #fff;
+      color: var(--muted);
+      cursor: pointer;
+      margin-left: auto;
+    }
+    .mo-filter-reset:hover { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+    .mo-filter-count {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 3px 0 0;
+      font-weight: 500;
+    }
+
+    /* ---- IGV frozen-track sticky ----------------------------------------- */
+    .igv-shell { display: flex; flex-direction: column; }
+    .igv-shell #igv-container {
+      max-height: calc(100vh - 300px);
+      min-height: 200px;
+      overflow-y: auto;
+      position: relative;
+    }
+    .frozen-track {
+      position: sticky !important;
+      z-index: 4 !important;
+      background: #fff !important;
+    }
+
+    /* ---- Homologous toolbar button --------------------------------------- */
+    .mo-clear-btn {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: #fff !important;
+      border-color: #c2410c;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mo-clear-btn:hover:not(:disabled) { filter: brightness(1.08); }
+    .mo-clear-btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      filter: none;
+    }
+    .mo-clear-badge {
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.25);
+      color: #fff;
+    }
+    .homo-btn { background: linear-gradient(135deg,#4a90e2,#1e5fa8); color:#fff !important; border-color:#1e5fa8; }
+    .homo-btn:hover { filter: brightness(1.1); }
+    .homo-btn.active { box-shadow: 0 0 0 2px #93c5fd inset; }
+
+    /* ---- Homologous drawer (same modal pattern as Tracks drawer) ---------- */
+    .homo-mask {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.35);
+      z-index: 1000;
+    }
+    .homo-mask.open { display: block; }
+
+    .homo-drawer {
+      position: fixed;
+      top: 0; right: 0;
+      width: 420px;
+      max-width: 95vw;
+      height: 100vh;
+      background: #fff;
+      border-left: 2px solid #93c5fd;
+      box-shadow: -6px 0 32px rgba(74,144,226,.18);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform .25s cubic-bezier(.4,0,.2,1);
+    }
+    .homo-drawer.open { transform: translateX(0); }
+
+    .homo-drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px 10px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg,#eff6ff,#dbeafe);
+      flex-shrink: 0;
+    }
+    .homo-drawer-head h3 { margin: 0; font-size: 14px; font-weight: 700; color: #1e3a5f; }
+    .homo-drawer-hint {
+      margin: 0; padding: 6px 18px 0;
+      font-size: 11px; color: var(--muted); flex-shrink: 0;
+    }
+
+    /* ---- View tabs ------------------------------------------------------- */
+    .homo-view-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+    .homo-tab {
+      flex: 1;
+      padding: 9px 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      background: #f8fafc;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .homo-tab.active { color: #1e5fa8; border-bottom-color: #4a90e2; background: #fff; }
+    .homo-tab:hover:not(.active) { color: var(--text); background: #f0f4f8; }
+
+    /* ---- Filter bar ------------------------------------------------------ */
+    #homo-seq-view, #homo-locus-view {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+    #homo-seq-view[hidden], #homo-locus-view[hidden], #homo-detail-view[hidden] {
+      display: none !important;
+    }
+    .homo-filter-bar {
+      flex-shrink: 0;
+      padding: 10px 14px 6px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+    }
+    .homo-search {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 10px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 7px;
+      outline: none;
+    }
+    .homo-search:focus { border-color: #4a90e2; box-shadow: 0 0 0 2px rgba(74,144,226,.2); }
+    .homo-filter-row {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .homo-select {
+      flex: 1;
+      min-width: 80px;
+      padding: 4px 6px;
+      font-size: 11px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .homo-filter-count {
+      margin-top: 5px;
+      font-size: 10px;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    /* ---- List containers ------------------------------------------------- */
+    .homo-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 8px 16px;
+    }
+    .homo-list::-webkit-scrollbar { width: 5px; }
+    .homo-list::-webkit-scrollbar-thumb { background: rgba(74,144,226,.35); border-radius: 3px; }
+    .homo-loading, .homo-empty { color: var(--muted); font-size: 12px; padding: 16px 6px; text-align: center; font-style: italic; }
+
+    /* ---- Sequence / Locus items ------------------------------------------ */
+    .homo-seq-item, .homo-locus-item {
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      margin-bottom: 2px;
+      transition: background .12s, border-color .12s;
+    }
+    .homo-seq-item:hover, .homo-locus-item:hover {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+    .homo-seq-item.selected, .homo-locus-item.selected {
+      background: #dbeafe;
+      border-color: #93c5fd;
+    }
+
+    /* Name row: sequence / locus ID */
+    .homo-item-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      letter-spacing: -0.01em;
+    }
+
+    /* Tag badges (species, chr, group) */
+    .homo-item-meta { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; align-items: center; }
+
+    /* Coordinate / locus row */
+    .homo-item-loc {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      font-family: 'SF Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+      letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .homo-item-loc .loc-locus {
+      color: #6366f1;          /* indigo for locus id label */
+      font-weight: 600;
+      font-size: 10px;
+    }
+    .homo-item-loc .loc-range { color: var(--muted); }
+
+    /* ── Badges ──────────────────────────────────────────────────────────── */
+    .homo-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+      line-height: 17px;
+      letter-spacing: 0.02em;
+    }
+    .homo-badge-species  { background: #fef3c7; color: #92400e; }
+    .homo-badge-chr      { background: #dcfce7; color: #166534; }
+    .homo-badge-group    { background: #ede9fe; color: #5b21b6; }
+    .homo-badge-erv                           { background: rgba(224,92,43,.13); color: #9a2f04; border: 1px solid rgba(224,92,43,.28); }
+    .homo-badge-erv[data-erv-type="β.ERV"]   { background: rgba(13,148,136,.12); color: #0f766e; border-color: rgba(13,148,136,.28); }
+
+    /* Sequence count badge on locus items */
+    .homo-locus-count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 10px;
+      background: #4a90e2;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    /* Strand badges */
+    .homo-strand {
+      font-size: 10px; font-weight: 700;
+      padding: 1px 5px; border-radius: 4px;
+      font-family: ui-monospace, monospace;
+      line-height: 16px;
+    }
+    .homo-strand-plus  { background: #dcfce7; color: #15803d; }
+    .homo-strand-minus { background: #fee2e2; color: #b91c1c; }
+
+    /* ---- ECharts containers in detail panel ------------------------------ */
+    .homo-chart { width: 100%; }
+    .homo-chart-pie { height: 200px; }
+    .homo-chart-bar { height: 280px; }
+
+    /* ---- In-drawer detail panel ------------------------------------------ */
+    #homo-detail-view { display: none; }           /* hidden by default */
+    #homo-detail-view:not([hidden]) {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+    #homo-detail-body .perv-detail-header { margin-bottom: 12px; }
+    #homo-detail-body .perv-detail-section { margin-bottom: 16px; }
+    #homo-detail-body .perv-region-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    #homo-detail-body .perv-region-table td { padding: 4px 6px; border-bottom: 1px solid #f1f5f9; }
+    #homo-detail-body .perv-region-table td:first-child { color: var(--muted); width: 45%; }
+    #homo-detail-body .perv-region-table .mono { font-family: monospace; }
+    #homo-detail-body .perv-detail-heading {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .04em; color: var(--muted); margin-bottom: 6px;
+    }
+    #homo-detail-body .perv-detail-name { font-size: 14px; font-weight: 700; color: var(--text); }
+    #homo-detail-body .perv-detail-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 10px; font-weight: 600; color: #fff; margin-top: 4px;
+    }
+    #homo-detail-body .perv-detail-header { display: flex; flex-direction: column; gap: 2px; }
+
+    /* ═══════════════ Multi-omics Download Modal (dlm-*) ═══════════════ */
+
+    /* Download Viz button accent */
+    .dlm-open-btn {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff !important;
+      border-color: #059669;
+    }
+    .dlm-open-btn:hover { filter: brightness(1.08); }
+
+    /* Overlay backdrop */
+    .dlm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+    .dlm-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Dialog */
+    .dlm-dialog {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.22);
+      width: 680px;
+      max-width: 96vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateY(12px) scale(.98);
+      transition: transform .2s;
+    }
+    .dlm-overlay.open .dlm-dialog {
+      transform: translateY(0) scale(1);
+    }
+
+    /* Header */
+    .dlm-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #f0fdf4, #dcfce7);
+      flex-shrink: 0;
+    }
+    .dlm-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: #065f46;
+    }
+
+    /* Scrollable body */
+    .dlm-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 0 4px;
+    }
+
+    /* Step sections */
+    .dlm-step {
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dlm-step:last-child { border-bottom: 0; }
+
+    .dlm-step-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .dlm-step-head h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .dlm-step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #10b981;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    /* Source type tabs */
+    .dlm-source-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .dlm-source-wrap > .dlm-label {
+      padding-top: 7px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .dlm-source-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .dlm-src-tab {
+      appearance: none;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+    }
+    .dlm-src-tab:hover { background: #f0fdf4; color: #065f46; border-color: #86efac; }
+    .dlm-src-tab.active {
+      background: #10b981;
+      color: #fff;
+      border-color: #059669;
+    }
+
+    /* Input helpers */
+    .dlm-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .dlm-input {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 13px;
+      color: var(--text);
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .dlm-input:focus {
+      outline: none;
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16,185,129,.15);
+    }
+    .dlm-search-wide { width: 100%; box-sizing: border-box; }
+
+    .dlm-select {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 12px;
+      color: var(--text);
+      background: #fff;
+      min-width: 140px;
+    }
+
+    /* Autocomplete dropdown */
+    .dlm-autocomplete {
+      position: absolute;
+      top: calc(100% + 3px);
+      left: 0; right: 0;
+      list-style: none;
+      margin: 0; padding: 0;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow-lg);
+      max-height: 260px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+    }
+    .dlm-autocomplete.open { display: block; }
+    .dlm-autocomplete li {
+      padding: 8px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dlm-autocomplete li:hover, .dlm-autocomplete li.selected {
+      background: #f0fdf4;
+      color: #065f46;
+    }
+    .dlm-autocomplete li .dlm-ac-pill {
+      font-size: 10px; font-weight: 700;
+      padding: 1px 6px; border-radius: 999px;
+      background: #d1fae5; color: #065f46;
+      flex-shrink: 0;
+    }
+    .dlm-autocomplete li .dlm-ac-name { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dlm-autocomplete li .dlm-ac-meta { color: var(--muted); font-size: 11px; white-space: nowrap; }
+
+    /* Scrollable item list (PERV / Homo) */
+    .dlm-item-list {
+      list-style: none;
+      margin: 6px 0 0; padding: 0;
+      max-height: 160px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .dlm-item-list li {
+      padding: 7px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+    .dlm-item-list li:last-child { border-bottom: 0; }
+    .dlm-item-list li:hover, .dlm-item-list li.selected {
+      background: #f0fdf4; color: #065f46;
+    }
+    .dlm-list-loading, .dlm-list-empty {
+      color: var(--muted); font-size: 12px; font-style: italic; cursor: default;
+    }
+    .dlm-item-meta { color: var(--muted); font-size: 10.5px; margin-left: auto; white-space: nowrap; }
+
+    /* Coordinate row */
+    .dlm-coord-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .dlm-field { display: flex; flex-direction: column; gap: 3px; }
+
+    /* Region preview */
+    .dlm-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+    }
+    .dlm-preview-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      flex-shrink: 0;
+    }
+
+    /* Extension fields */
+    .dlm-extend-fields {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .dlm-inline-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      margin-left: 8px;
+    }
+    .dlm-inline-check input { accent-color: #10b981; cursor: pointer; }
+
+    /* Hint text */
+    .dlm-hint {
+      margin: 0 0 10px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .dlm-loading { color: var(--muted); font-size: 12px; font-style: italic; padding: 6px 0; }
+
+    /* Tracks accordion */
+    .dlm-tracks-cat {
+      margin-bottom: 5px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .dlm-tracks-cat summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 9px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--panel);
+      user-select: none;
+    }
+    .dlm-tracks-cat summary::-webkit-details-marker { display: none; }
+    .dlm-tracks-cat summary .dlm-cat-caret { font-size: 10px; color: var(--muted); transition: transform .15s; }
+    .dlm-tracks-cat[open] summary .dlm-cat-caret { transform: rotate(90deg); }
+    .dlm-tracks-cat summary .dlm-cat-badge {
+      font-size: 10px; font-weight: 600;
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 999px; padding: 1px 6px; color: var(--muted);
+    }
+    .dlm-cat-left { display: flex; align-items: center; gap: 8px; }
+    .dlm-cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dlm-file-list { padding: 3px 0 6px; }
+    .dlm-file-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin: 1px 5px;
+      transition: background .1s;
+    }
+    .dlm-file-item:hover { background: #f0fdf4; }
+    .dlm-file-item input[type="checkbox"] { accent-color: #10b981; flex-shrink: 0; cursor: pointer; margin-top: 2px; }
+    .dlm-file-item .dlm-fname { flex: 1; min-width: 0; word-break: break-all; line-height: 1.4; }
+    .dlm-file-item .dlm-fsize { color: var(--muted); font-size: 11px; flex-shrink: 0; margin-top: 2px; }
+    .dlm-tracks-empty { color: var(--muted); font-size: 12px; padding: 6px 12px; font-style: italic; }
+
+    /* Annotation track checkboxes */
+    .dlm-annot-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .dlm-check-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: #f8fafc;
+      user-select: none;
+      transition: background .12s, border-color .12s;
+    }
+    .dlm-check-label:hover { background: #f0fdf4; border-color: #86efac; }
+    .dlm-check-label input { accent-color: #10b981; cursor: pointer; }
+
+    /* Format radio buttons */
+    .dlm-fmt-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .dlm-radio-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      user-select: none;
+    }
+    .dlm-radio-label:hover { border-color: #86efac; background: #f0fdf4; }
+    .dlm-radio-label input[type="radio"] { accent-color: #10b981; cursor: pointer; }
+    .dlm-radio-label:has(input:checked) {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+    .dlm-fmt-badge {
+      font-size: 11px; font-weight: 800;
+      padding: 2px 7px; border-radius: 6px;
+      background: #10b981; color: #fff;
+      letter-spacing: .04em;
+    }
+    .dlm-fmt-desc { font-size: 11px; color: var(--muted); }
+
+    /* Engine selector — column layout so recommended engine stays on top */
+    .dlm-engine-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .dlm-engine-row .dlm-radio-label { width: 100%; box-sizing: border-box; }
+    .dlm-engine-step { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+    .dlm-radio-label-recommended {
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+    .dlm-engine-recommend {
+      font-size: 20px;
+      line-height: 1;
+      margin-left: -2px;
+      cursor: help;
+      user-select: none;
+    }
+
+    /* pyGenomeTracks customisation */
+    .dlm-pygt-step { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+    .dlm-pygt-hint { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .dlm-pygt-tracks {
+      display: flex; flex-direction: column; gap: 4px;
+      max-height: 220px; overflow-y: auto;
+      background: #fff; border: 1px solid var(--border); border-radius: 6px;
+      padding: 6px;
+    }
+    .dlm-pygt-track-row {
+      display: grid;
+      grid-template-columns: 18px 1fr 28px 90px 22px;
+      gap: 8px; align-items: center;
+      padding: 4px 6px; border-radius: 4px;
+      font-size: 12px;
+      background: #f8fafc;
+    }
+    .dlm-pygt-track-row:hover { background: #eef2ff; }
+    .dlm-pygt-drag { cursor: grab; color: var(--muted); text-align: center; user-select: none; }
+    .dlm-pygt-drag:active { cursor: grabbing; }
+    .dlm-pygt-track-row[draggable="true"] { cursor: default; }
+    .dlm-pygt-track-row.drag-over { outline: 2px dashed #38bdf8; }
+    .dlm-pygt-title { font-family: ui-monospace, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dlm-pygt-color { width: 28px; height: 22px; border: 1px solid var(--border); border-radius: 4px; padding: 0; cursor: pointer; background: transparent; }
+    .dlm-pygt-height { width: 80px; padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; }
+    .dlm-pygt-remove { border: none; background: transparent; color: #dc2626; cursor: pointer; font-size: 14px; }
+    .dlm-pygt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 10px; }
+    .dlm-pygt-tx-opts {
+      margin: 6px 0 0 22px;
+      padding: 8px 10px;
+      background: #f0f9ff;
+      border-left: 3px solid #38bdf8;
+      border-radius: 0 6px 6px 0;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+    .dlm-radio-sm { padding: 3px 8px; font-size: 12px; }
+    .dlm-mpl-only[hidden], .dlm-pygt-only[hidden] { display: none !important; }
+    .dlm-pygt-status { font-size: 12px; padding: 6px 0; color: var(--muted); }
+    .dlm-pygt-status.is-error { color: #dc2626; }
+    .dlm-pygt-status.is-done { color: #059669; }
+    .dlm-pygt-warnings {
+      font-size: 12px; padding: 6px 10px; margin: 4px 0;
+      background: #fffbeb; border: 1px solid #fbbf24; border-radius: 4px;
+      color: #92400e; line-height: 1.5;
+    }
+    .dlm-pygt-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+    .dlm-pygt-ini {
+      margin-top: 8px;
+      max-height: 260px;
+      overflow: auto;
+      padding: 8px 10px;
+      background: #0f172a; color: #e2e8f0;
+      font-family: ui-monospace, monospace; font-size: 11px;
+      border-radius: 6px;
+      white-space: pre;
+    }
+
+    /* Footer */
+    .dlm-footer {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      background: #f8fafc;
+    }
+    .dlm-footer-btns {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .dlm-err {
+      font-size: 12px;
+      color: #dc2626;
+      flex: 1;
+    }
+    .dlm-generate-btn {
+      background: #10b981 !important;
+      border-color: #059669 !important;
+      color: #fff !important;
+      font-weight: 700 !important;
+      min-width: 160px;
+    }
+    .dlm-generate-btn:hover { filter: brightness(1.07); }
+    .dlm-generate-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+  </style>
+{% endblock %}
+
+{% block body_extra %}
+  {% if genome_ready %}
+    <script src="https://cdn.jsdelivr.net/npm/igv@3.8.0/dist/igv.min.js"></script>
+    <script src="{{ url_for('static', filename='js/sequence.js') }}?v={{ asset_v }}"></script>
+    <script src="{{ url_for('static', filename='js/genome.js') }}?v={{ asset_v }}"></script>
+    <script src="{{ url_for('static', filename='js/multiomics.js') }}?v={{ asset_v }}"></script>
+    <script src="{{ url_for('static', filename='js/download_modal.js') }}?v={{ asset_v }}"></script>
+  {% endif %}
+{% endblock %}

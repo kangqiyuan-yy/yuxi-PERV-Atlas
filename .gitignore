@@ -1,0 +1,29 @@
+genome.ref/
+genome.ref.guochao/
+Multi-omics/
+# Ignore multi-omics data dir, but keep metadata + deploy log tracked
+new.Multi-omics/*
+!new.Multi-omics/all.sample.info
+!new.Multi-omics/represent.sample.info
+!new.Multi-omics/nohup.out
+
+# Generated indexes / caches
+data/
+__pycache__/
+*.pyc
+
+# Local Python environment
+.venv/
+
+# Runtime / logs / pid
+perv.log
+.perv.pid
+
+# pyGenomeTracks job artifacts
+tmp/
+
+# Local packaging artifact
+perv-atlas.tar.gz
+
+# OS junk
+.DS_Store

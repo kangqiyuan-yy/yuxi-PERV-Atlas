@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2 class="section-title" data-i18n="ov.title">Overview</h2>
+  <p class="section-subtitle" data-i18n="ov.subtitle">Composition...</p>
+
+  <section class="grid cols-4" id="kpi-row" style="margin-bottom:18px;">
+    <div class="kpi"><span class="label" data-i18n="ov.kpi.total">Total</span><span class="value" id="kpi-total">-</span></div>
+    <div class="kpi"><span class="label" data-i18n="ov.kpi.gamma">γ.ERV</span><span class="value" id="kpi-gamma">-</span><span class="sub" id="kpi-gamma-pct"></span></div>
+    <div class="kpi"><span class="label" data-i18n="ov.kpi.beta">β.ERV</span><span class="value" id="kpi-beta">-</span><span class="sub" id="kpi-beta-pct"></span></div>
+    <div class="kpi"><span class="label" data-i18n="ov.kpi.groups">Groups</span><span class="value" id="kpi-groups">-</span></div>
+  </section>
+
+  <section class="grid cols-2" style="margin-bottom:18px;">
+    <div class="chart-card">
+      <h4 data-i18n="ov.chart.type">γ vs β</h4>
+      <div class="chart-box" id="chart-type"></div>
+    </div>
+    <div class="chart-card">
+      <h4 data-i18n="ov.chart.group">Group</h4>
+      <div class="chart-box" id="chart-group"></div>
+    </div>
+  </section>
+
+  <section style="margin-bottom:18px;">
+    <div class="chart-card">
+      <h4 data-i18n="ov.chart.abbr">Abbretiation</h4>
+      <div class="chart-box tall" id="chart-abbr"></div>
+    </div>
+  </section>
+
+  <section class="grid cols-3" style="margin-bottom:24px;">
+    <div class="chart-card">
+      <h4 data-i18n="ov.chart.identity">Identity</h4>
+      <div class="chart-box" id="chart-identity"></div>
+    </div>
+    <div class="chart-card">
+      <h4 data-i18n="ov.chart.insertion">Insertion_Time</h4>
+      <div class="chart-box" id="chart-insertion"></div>
+    </div>
+    <div class="chart-card">
+      <h4 data-i18n="ov.chart.kimura">Kimura</h4>
+      <div class="chart-box" id="chart-kimura"></div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-bottom:18px;">
+    <h3 style="margin-top:0;" data-i18n="ov.table.title">Table</h3>
+    <div class="table-tools">
+      <input type="search" id="t-q" data-i18n-ph="ov.table.search" />
+      <select id="t-type">
+        <option value="" data-i18n="ov.table.type">All ERV.type</option>
+        <option value="γ.ERV">γ.ERV</option>
+        <option value="β.ERV">β.ERV</option>
+      </select>
+      <select id="t-group">
+        <option value="" data-i18n="ov.table.group">All Group</option>
+        <option value="Eastern">Eastern</option>
+        <option value="Western">Western</option>
+        <option value="Wild">Wild</option>
+      </select>
+      <div class="right">
+        <span id="t-total" style="color:var(--muted);font-size:13px;"></span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data" id="meta-table">
+        <thead>
+          <tr>
+            <th>Sequence.ID</th>
+            <th>ERV.type</th>
+            <th>Group</th>
+            <th>Abbretiation</th>
+            <th>Category</th>
+            <th>TE_type</th>
+            <th>Identity</th>
+            <th>Insertion_Time</th>
+            <th>Kimura.distance</th>
+            <th>Motif</th>
+            <th>TSD</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <button id="p-prev">&laquo;</button>
+      <span id="p-info">1</span>
+      <button id="p-next">&raquo;</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3 style="margin-top:0;" data-i18n="ov.dl.title">Downloads</h3>
+    <div class="downloads">
+      <a class="download-item" href="{{ url_for('download_file', filename='my.final.fa') }}">
+        <span class="ext">FA</span>
+        <span data-i18n="ov.dl.fa">Full FASTA</span>
+      </a>
+      <a class="download-item" href="{{ url_for('download_file', filename='1165.intact.PERV.infomation.xlsx') }}">
+        <span class="ext">XLSX</span>
+        <span data-i18n="ov.dl.xlsx">Metadata Excel</span>
+      </a>
+    </div>
+  </section>
+{% endblock %}
+
+{% block body_extra %}
+  <script src="{{ url_for('static', filename='js/overview.js') }}?v={{ asset_v }}"></script>
+{% endblock %}

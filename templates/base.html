@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PERV Atlas</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/new.bottom.log.png') }}?v={{ asset_v }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_v }}" />
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script src="{{ url_for('static', filename='js/chart_anim.js') }}?v={{ asset_v }}"></script>
+  {% block head_extra %}{% endblock %}
+</head>
+<body data-title-key="{% block title_key %}site.title{% endblock %}">
+  <header class="topbar">
+    <a href="{{ url_for('page_index') }}" class="brand">
+      <img class="logo"
+           src="{{ url_for('static', filename='img/new.bottom.log.png') }}?v={{ asset_v }}"
+           width="42" height="42"
+           alt=""
+           aria-hidden="true" />
+      <span data-i18n="site.brand">PERV Atlas</span>
+    </a>
+    <nav>
+      <a href="{{ url_for('page_index') }}"
+         class="{% if request.endpoint == 'page_index' %}active{% endif %}"
+         data-i18n="nav.home">Home</a>
+      <a href="{{ url_for('page_overview') }}"
+         class="{% if request.endpoint == 'page_overview' %}active{% endif %}"
+         data-i18n="nav.overview">Overview</a>
+      <a href="{{ url_for('page_browser') }}"
+         class="{% if request.endpoint == 'page_browser' %}active{% endif %}"
+         data-i18n="nav.browser">Browser</a>
+      <a href="{{ url_for('page_genome') }}"
+         class="{% if request.endpoint == 'page_genome' %}active{% endif %}"
+         data-i18n="nav.genome">Genome Browser</a>
+    </nav>
+    <div class="spacer"></div>
+    <div class="lang-switch" role="group" aria-label="language">
+      <button data-lang="zh" type="button">中文</button>
+      <button data-lang="en" type="button">EN</button>
+    </div>
+  </header>
+
+  <main class="container {% block container_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer %}
+  <footer class="site-footer">
+    PERV Atlas &middot; <span data-i18n="site.brand">PERV Atlas</span>
+  </footer>
+  {% endblock %}
+
+  <script src="{{ url_for('static', filename='js/i18n.js') }}?v={{ asset_v }}"></script>
+  {% block body_extra %}{% endblock %}
+</body>
+</html>

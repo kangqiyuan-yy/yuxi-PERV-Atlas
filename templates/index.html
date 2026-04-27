@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <div class="hero-grid">
+      <div>
+        <span class="eyebrow">
+          <span class="pulse"></span>
+          <span data-i18n="home.eyebrow">Porcine endogenous retrovirus atlas</span>
+        </span>
+        <h1 data-i18n="home.hero.title">从 PERV 全景到基因组与多组学，一站式交互探索</h1>
+        <p class="lede" data-i18n="home.hero.desc">Description...</p>
+        <div class="hero-cta">
+          <a class="btn primary-onhero" href="{{ url_for('page_overview') }}">
+            <span data-i18n="home.hero.cta1">Open overview</span>
+            <span aria-hidden="true">→</span>
+          </a>
+          <a class="btn ghost-onhero" href="{{ url_for('page_genome') }}">
+            <span data-i18n="home.hero.cta2">Genome browser</span>
+          </a>
+        </div>
+
+        <div class="hero-kpis" id="hero-kpis">
+          <div class="hero-kpi hero-kpi-combined">
+            <div class="v" id="kpi-total">1,165</div>
+            <div class="l" data-i18n="home.kpi.total">Intact PERVs</div>
+            <div class="hero-kpi-breakdown">
+              <span><b id="kpi-gamma">1,020</b> γ.ERV</span>
+              <span><b id="kpi-beta">145</b> β.ERV</span>
+              <span><b id="kpi-anno">139</b> <span data-i18n="home.kpi.anno">Fully annotated</span></span>
+              <span><b id="kpi-homo">876</b> <span data-i18n="home.kpi.homo">同源定位</span></span>
+              <span><b id="kpi-loci">188</b> locus</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-art" aria-hidden="true">
+        <div class="ring r1"></div>
+        <div class="ring r2"></div>
+        <div class="ring r3"></div>
+        <svg class="dna" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="strandA" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#22d3ee"/>
+              <stop offset="100%" stop-color="#a78bfa"/>
+            </linearGradient>
+            <linearGradient id="strandB" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#f472b6"/>
+              <stop offset="100%" stop-color="#60a5fa"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(180,180)">
+            {% for i in range(21) %}
+              {% set y = -160 + i * 16 %}
+              <line x1="-86" y1="{{ y }}" x2="86" y2="{{ y }}"
+                    stroke="rgba(186,230,253,0.32)" stroke-width="1"/>
+            {% endfor %}
+            <path d="M -90 -160 Q 90 -120 -90 -80 Q 90 -40 -90 0 Q 90 40 -90 80 Q 90 120 -90 160"
+                  fill="none" stroke="url(#strandA)" stroke-width="3.4" stroke-linecap="round"/>
+            <path d="M 90 -160 Q -90 -120 90 -80 Q -90 -40 90 0 Q -90 40 90 80 Q -90 120 90 160"
+                  fill="none" stroke="url(#strandB)" stroke-width="3.4" stroke-linecap="round"/>
+            {% for i in range(11) %}
+              {% set y = -160 + i * 32 %}
+              <circle cx="-90" cy="{{ y }}" r="4" fill="#22d3ee"/>
+              <circle cx="90" cy="{{ y }}" r="4" fill="#f472b6"/>
+            {% endfor %}
+          </g>
+        </svg>
+        <div class="floats">
+          <span>5'-ATG-CCT-AAG-3'</span>
+          <span>γ.ERV</span>
+          <span>LTR / GAG / POL / ENV</span>
+          <span>PERV Homologous</span>
+          <span>Multi-omics</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <div class="section-head" data-scroll>
+      <h2 data-i18n="home.modules.title">Four integrated modules</h2>
+    </div>
+
+    <div class="grid cols-4">
+      <article class="feature-card c1" data-scroll data-scroll-delay="1">
+        <div class="icon-wrap" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/>
+            <rect x="6" y="12" width="3" height="6" rx="1"/>
+            <rect x="11" y="8" width="3" height="10" rx="1"/>
+            <rect x="16" y="5" width="3" height="13" rx="1"/>
+          </svg>
+        </div>
+        <span class="badge" data-i18n="home.card1.tag">Section 1</span>
+        <h3 data-i18n="home.card1.title">Section 1</h3>
+        <div class="meta-row">
+          <span><b id="card1-total">1,165</b> <span data-i18n="home.card1.m1">sequences</span></span>
+          <span><b>6</b> <span data-i18n="home.card1.m2">interactive charts</span></span>
+          <span><b>FA + XLSX</b> <span data-i18n="home.card1.m3">downloads</span></span>
+        </div>
+        <div class="actions">
+          <a class="btn" href="{{ url_for('page_overview') }}" data-i18n="home.card1.cta">Open</a>
+        </div>
+      </article>
+
+      <article class="feature-card c2" data-scroll data-scroll-delay="2">
+        <div class="icon-wrap" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/>
+            <circle cx="18" cy="18" r="3"/>
+            <path d="M20 20l2 2"/>
+          </svg>
+        </div>
+        <span class="badge" data-i18n="home.card2.tag">Section 2</span>
+        <h3 data-i18n="home.card2.title">Section 2</h3>
+        <div class="meta-row">
+          <span><b id="card2-anno">139</b> <span data-i18n="home.card2.m1">annotated PERVs</span></span>
+          <span><b>ORF / Domain</b> <span data-i18n="home.card2.m2">tracks</span></span>
+        </div>
+        <div class="actions">
+          <a class="btn" href="{{ url_for('page_browser') }}" data-i18n="home.card2.cta">Open</a>
+        </div>
+      </article>
+
+      <article class="feature-card c3" data-scroll data-scroll-delay="3">
+        <div class="icon-wrap" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M3 12c4-3 14-3 18 0"/>
+            <path d="M3 12c4 3 14 3 18 0"/>
+            <path d="M12 3v18"/>
+          </svg>
+        </div>
+        <span class="badge" data-i18n="home.card3.tag">Section 3</span>
+        <h3 data-i18n="home.card3.title">Section 3</h3>
+        <div class="meta-row">
+          <span><b id="card3-homo">876</b> <span data-i18n="home.card3.m1">条多品种PERV在sus11.1上完成同源定位</span></span>
+          <span><b>BigWig</b> <span data-i18n="home.card3.m2">多组学轨道</span></span>
+        </div>
+        <div class="actions">
+          <a class="btn" href="{{ url_for('page_genome') }}" data-i18n="home.card3.cta">Open</a>
+        </div>
+      </article>
+
+      <article class="feature-card c4" data-scroll data-scroll-delay="4">
+        <div class="icon-wrap" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2 2 7l10 5 10-5-10-5z"/>
+            <path d="M2 12l10 5 10-5"/>
+            <path d="M2 17l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="badge" data-i18n="home.card4.tag">Section 4</span>
+        <h3 data-i18n="home.card4.title">Multi-omics atlas</h3>
+        <div class="meta-row">
+          <span><b id="card4-files">—</b> <span data-i18n="home.card4.m1">multi-omics files</span></span>
+          <span><b id="card4-tissues">14</b> <span data-i18n="home.card4.m2">tissues / cell lines</span></span>
+          <span><b id="card4-assays">4</b> <span data-i18n="home.card4.m3">assay types</span></span>
+        </div>
+        <div class="actions">
+          <a class="btn" href="#omics-atlas" data-i18n="home.card4.cta">View multi-omics atlas</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="home-section omics-atlas" id="omics-atlas">
+    <div class="omics-strip" id="omics-strip" data-scroll>
+      <div class="omics-num"><div class="v" id="omics-n-files">—</div><div class="l" data-i18n="home.omics.kpi.files">Files</div></div>
+      <div class="omics-num"><div class="v" id="omics-n-samples">—</div><div class="l" data-i18n="home.omics.kpi.samples">Samples</div></div>
+      <div class="omics-num"><div class="v" id="omics-n-stages">—</div><div class="l" data-i18n="home.omics.kpi.stages">Stages</div></div>
+      <div class="omics-num"><div class="v" id="omics-n-tissues">—</div><div class="l" data-i18n="home.omics.kpi.tissues">Tissues</div></div>
+      <div class="omics-num"><div class="v" id="omics-n-assays">—</div><div class="l" data-i18n="home.omics.kpi.assays">Assays</div></div>
+    </div>
+
+    <p class="omics-hint" data-i18n="home.omics.hint">Click a tissue card to view stats; capsule toggles carousel / global overview</p>
+
+    <div class="omics-row1" id="omics-interactive" data-scroll>
+      <figure class="omics-anatomy-wrap">
+        <img class="pig-illustration"
+             src="{{ url_for('static', filename='img/pig.svg') }}?v={{ asset_v }}"
+             alt="Pig anatomy reference illustration"
+             draggable="false"/>
+        <figcaption data-i18n="home.omics.anatomy.caption">
+          Reference: tissues sampled in this multi-omics atlas
+        </figcaption>
+      </figure>
+
+      <div class="omics-selectors">
+        <aside class="omics-tissues-wrap" id="omics-tissues-wrap">
+          <div class="omics-panel-head">
+            <h3 data-i18n="home.omics.anatomy.title">Tissues</h3>
+          </div>
+          <div class="omics-tissues" id="omics-tissues"></div>
+        </aside>
+
+        <aside class="omics-cells-wrap" id="omics-cells-wrap">
+          <h3 data-i18n="home.omics.cells.title">Cell lines</h3>
+          <div class="omics-cells" id="omics-cells"></div>
+        </aside>
+      </div>
+    </div>
+
+    <section class="omics-row2" id="omics-charts-row" aria-live="polite">
+      <div class="omics-charts-head">
+        <div class="omics-charts-head-text">
+          <span class="omics-tissue-sub" id="omics-tissue-sub" hidden></span>
+          <h3 id="omics-charts-title" data-i18n="home.omics.charts.title">Multi-omics overview</h3>
+        </div>
+        <div class="omics-mode-capsule" id="omics-mode-capsule" role="tablist" aria-label="Chart view mode">
+          <button type="button" class="capsule-item" data-mode="carousel" role="tab" aria-selected="false">
+            <span class="dot"></span>
+            <span data-i18n="home.omics.charts.carousel">Carousel</span>
+          </button>
+          <button type="button" class="capsule-item active" data-mode="overview" role="tab" aria-selected="true">
+            <span class="dot"></span>
+            <span data-i18n="home.omics.charts.overview">Overview</span>
+          </button>
+        </div>
+      </div>
+      <div class="omics-charts-body" id="omics-charts-body">
+        <div class="omics-charts-grid" id="omics-charts-grid"></div>
+        <div class="omics-tissue-panel" id="omics-tissue-panel" hidden>
+          <div class="omics-tissue-meta" id="omics-tissue-meta"></div>
+          <div class="omics-matrix-head">
+            <h4 class="omics-matrix-heading" data-i18n="home.omics.modal.matrix_title">Stage × Assay matrix</h4>
+            <div class="omics-matrix-legend">
+              <span class="legend-bar"></span>
+              <span data-i18n="home.omics.modal.matrix_legend">Darker = more files</span>
+            </div>
+          </div>
+          <div class="omics-matrix-wrap" id="omics-inline-matrix"></div>
+        </div>
+      </div>
+    </section>
+  </section>
+{% endblock %}
+
+{% block footer %}
+<footer class="home-contact-footer" aria-label="Contact information">
+  <div class="home-contact-footer-inner">
+    <figure class="home-contact-logo-wrap">
+      <img class="home-contact-logo"
+           src="{{ url_for('static', filename='img/new.bottom.log.png') }}?v={{ asset_v }}"
+           alt="PERV Atlas"
+           draggable="false" />
+    </figure>
+    <div class="home-contact-col">
+      <h3 data-i18n="home.footer.developed">Developed By</h3>
+      <div class="home-contact-block">
+        <div class="home-contact-label" data-i18n="home.footer.institution">INSTITUTION:</div>
+        <div class="home-contact-value" data-i18n="home.footer.institution.val">Kunming Institute of Zoology, CAS</div>
+      </div>
+      <div class="home-contact-block">
+        <div class="home-contact-label" data-i18n="home.footer.email">EMAIL:</div>
+        <div class="home-contact-value">
+          <a href="mailto:kizdatacenter@mail.kiz.ac.cn">kizdatacenter@mail.kiz.ac.cn</a>
+        </div>
+      </div>
+    </div>
+    <div class="home-contact-col">
+      <h3 data-i18n="home.footer.contact">Contact Us</h3>
+      <div class="home-contact-block">
+        <div class="home-contact-label" data-i18n="home.footer.email">EMAIL:</div>
+        <div class="home-contact-value">
+          <a href="mailto:yuankangqi@mail.kiz.ac.cn">yuankangqi@mail.kiz.ac.cn</a>
+        </div>
+      </div>
+      <div class="home-contact-row">
+        <div class="home-contact-block">
+          <div class="home-contact-label" data-i18n="home.footer.email">EMAIL:</div>
+          <div class="home-contact-value">
+            <a href="mailto:pengminsheng@mail.kiz.ac.cn">pengminsheng@mail.kiz.ac.cn</a>
+          </div>
+        </div>
+        <div class="home-contact-block">
+          <div class="home-contact-label" data-i18n="home.footer.email">EMAIL:</div>
+          <div class="home-contact-value">
+            <a href="mailto:zhangyp@mail.kiz.ac.cn">zhangyp@mail.kiz.ac.cn</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+{% endblock %}
+
+{% block body_extra %}
+<script src="{{ url_for('static', filename='js/chart_anim.js') }}?v={{ asset_v }}"></script>
+<script src="{{ url_for('static', filename='js/omics_colors.js') }}?v={{ asset_v }}"></script>
+<script src="{{ url_for('static', filename='js/home_omics.js') }}?v={{ asset_v }}"></script>
+<script src="{{ url_for('static', filename='js/scroll_anim.js') }}?v={{ asset_v }}"></script>
+<script>
+  // Live-fetch overview stats so KPIs reflect the actual loaded dataset
+  (async function () {
+    const fmt = (n) => Number(n).toLocaleString();
+    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    let homoMapped = 876;
+    let homoLoci = 188;
+    try {
+      const r = await fetch('/api/overview/stats');
+      if (!r.ok) return;
+      const d = await r.json();
+      const total = d.total || 0;
+      const tc = d.type_counts || {};
+      const gamma = tc['γ.ERV'] || tc['gamma.ERV'] || 0;
+      const beta = tc['β.ERV'] || tc['beta.ERV'] || 0;
+      setText('kpi-total', fmt(total));
+      if (gamma) setText('kpi-gamma', fmt(gamma));
+      if (beta) setText('kpi-beta', fmt(beta));
+      setText('card1-total', fmt(total));
+    } catch (_) {}
+    try {
+      const r2 = await fetch('/api/sequences/pass');
+      if (r2.ok) {
+        const d2 = await r2.json();
+        const v = (d2.total || 139);
+        setText('kpi-anno', fmt(v));
+        setText('card2-anno', fmt(v));
+      }
+    } catch (_) {}
+    try {
+      const r3 = await fetch('/api/genome/homologous/list');
+      if (r3.ok) {
+        const d3 = await r3.json();
+        const n = (d3.total != null ? d3.total : (d3.sequences || []).length);
+        if (n) homoMapped = n;
+      }
+    } catch (_) {}
+    try {
+      const r4 = await fetch('/api/genome/homologous/loci');
+      if (r4.ok) {
+        const d4 = await r4.json();
+        const n = (d4.total != null ? d4.total : (d4.loci || []).length);
+        if (n) homoLoci = n;
+      }
+    } catch (_) {}
+    setText('kpi-homo', fmt(homoMapped));
+    setText('kpi-loci', fmt(homoLoci));
+    setText('card3-homo', fmt(homoMapped));
+  })();
+</script>
+{% endblock %}
