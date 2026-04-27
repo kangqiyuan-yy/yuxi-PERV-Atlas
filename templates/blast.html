@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title_key %}blast.title{% endblock %}
+{% block content %}
+  <h2 class="section-title" data-i18n="blast.title">BLAST search</h2>
+  <p class="section-subtitle" data-i18n="blast.subtitle">
+    Search a sequence against the PERV nucleotide and protein libraries.
+  </p>
+
+  <div class="blast-layout">
+    <section class="card blast-form" aria-label="BLAST query">
+      <div class="blast-field">
+        <label class="blast-label" for="blast-query" data-i18n="blast.query.label">Query sequence</label>
+        <div id="blast-drop" class="blast-drop">
+          <textarea id="blast-query" class="blast-textarea" spellcheck="false"
+                    data-i18n-ph="blast.query.placeholder"
+                    placeholder="Paste FASTA or a raw sequence..."></textarea>
+          <div class="blast-drop-hint" data-i18n="blast.file.drop">Drop a FASTA file here</div>
+        </div>
+        <input type="file" id="blast-file" class="blast-file-input"
+               accept=".fa,.fasta,.fna,.faa,.txt,text/plain" hidden />
+        <div class="blast-query-meta">
+          <span id="blast-query-info" class="blast-muted"></span>
+          <span class="blast-query-actions">
+            <button type="button" class="btn ghost sm" id="blast-file-btn" data-i18n="blast.file.btn">Upload file</button>
+            <button type="button" class="btn ghost sm" id="blast-example" data-i18n="blast.example">Load example</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="blast-options">
+        <div class="blast-field">
+          <label class="blast-label" for="blast-program" data-i18n="blast.program.label">Program</label>
+          <select id="blast-program" class="blast-select"></select>
+          <span class="blast-muted" id="blast-program-hint"></span>
+        </div>
+        <div class="blast-field">
+          <label class="blast-label" for="blast-db" data-i18n="blast.db.label">Database</label>
+          <select id="blast-db" class="blast-select"></select>
+        </div>
+        <div class="blast-field">
+          <label class="blast-label" for="blast-evalue" data-i18n="blast.evalue.label">E-value</label>
+          <div class="blast-combo">
+            <input type="text" id="blast-evalue" class="blast-input"
+                   inputmode="decimal" autocomplete="off" spellcheck="false"
+                   role="combobox" aria-expanded="false" aria-autocomplete="list"
+                   aria-controls="blast-evalue-list" />
+            <ul id="blast-evalue-list" class="blast-combo-list" role="listbox" hidden></ul>
+          </div>
+          <span class="blast-muted" data-i18n="blast.evalue.hint">You can type a custom value, e.g. 1e-8</span>
+        </div>
+        <div class="blast-field">
+          <label class="blast-label" for="blast-maxhits" data-i18n="blast.maxhits.label">Max hits</label>
+          <input type="number" id="blast-maxhits" class="blast-input" min="1" max="250" step="1" value="10" />
+          <span class="blast-muted" data-i18n="blast.maxhits.hint">Changing this updates the list below instantly (no re-run).</span>
+        </div>
+        <div class="blast-field blast-field-btn">
+          <label class="blast-label" aria-hidden="true">&nbsp;</label>
+          <button type="button" class="btn primary" id="blast-submit" data-i18n="blast.submit">Run BLAST</button>
+        </div>
+        <div class="blast-field blast-field-btn">
+          <label class="blast-label" aria-hidden="true">&nbsp;</label>
+          <button type="button" class="btn ghost" id="blast-clear" data-i18n="blast.clear">Clear</button>
+        </div>
+      </div>
+
+      <div class="blast-actions">
+        <span id="blast-status" class="blast-status" role="status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="card blast-results" id="blast-results" aria-live="polite" hidden>
+      <div class="blast-results-head">
+        <h3 id="blast-results-title" data-i18n="blast.results.title">Results</h3>
+      </div>
+      <div id="blast-results-body"></div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block body_extra %}
+<script src="{{ asset('js/blast.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PERV Atlas</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+  <link rel="icon" type="image/png" href="{{ asset('img/new.bottom.log.png') }}" />
+  <link rel="stylesheet" href="{{ asset('css/style.css') }}" />
+  <script>
+    (function(){
+      try{document.documentElement.lang=(localStorage.getItem('perv.lang')||'en')==='zh'?'zh-CN':'en';}catch(e){}
+      document.documentElement.classList.add('i18n-loading');
+      setTimeout(function(){document.documentElement.classList.remove('i18n-loading');},1500);
+    })();
+  </script>
+  <!-- defer: ECharts is never used at parse time (all init runs on
+       DOMContentLoaded or later), so loading it deferred keeps it off the
+       render-critical path and lets text/layout paint immediately. -->
+  <script defer src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script defer src="{{ asset('js/chart_anim.js') }}"></script>
+  {% block head_extra %}{% endblock %}
+</head>
+<body data-title-key="{% block title_key %}site.title{% endblock %}">
+  <header class="topbar">
+    <a href="{{ url_for('page_index') }}" class="brand">
+      <img class="logo"
+           src="{{ asset('img/new.bottom.log.png') }}"
+           width="42" height="42"
+           alt=""
+           aria-hidden="true" />
+      <span data-i18n="site.brand">PERV Atlas</span>
+    </a>
+    <nav>
+      <a href="{{ url_for('page_index') }}"
+         class="{% if request.endpoint == 'page_index' %}active{% endif %}"
+         data-i18n="nav.home">Home</a>
+      <a href="{{ url_for('page_overview') }}"
+         class="{% if request.endpoint == 'page_overview' %}active{% endif %}"
+         data-i18n="nav.overview">Overview</a>
+      <a href="{{ url_for('page_browser') }}"
+         class="{% if request.endpoint == 'page_browser' %}active{% endif %}"
+         data-i18n="nav.browser">Browser</a>
+      <a href="{{ url_for('page_genome') }}"
+         class="{% if request.endpoint == 'page_genome' %}active{% endif %}"
+         data-i18n="nav.genome">Genome Browser</a>
+      <a href="{{ url_for('page_blast') }}"
+         class="{% if request.endpoint == 'page_blast' %}active{% endif %}"
+         data-i18n="nav.blast">BLAST</a>
+    </nav>
+    <div class="spacer"></div>
+    <div class="lang-switch" role="group" aria-label="language">
+      <button data-lang="zh" type="button">中文</button>
+      <button data-lang="en" type="button">EN</button>
+    </div>
+  </header>
+
+  <main class="container {% block container_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer %}
+  <footer class="site-footer">
+    <span data-i18n="site.footer.copyright">&copy; 2026 PERV Atlas &middot; Porcine Endogenous Retrovirus Atlas. All rights reserved.</span>
+  </footer>
+  {% endblock %}
+
+  <script src="{{ asset('js/i18n.js') }}"></script>
+  <script src="{{ asset('js/tooltip.js') }}"></script>
+  <script src="{{ asset('js/select_enhance.js') }}"></script>
+  {% block body_extra %}{% endblock %}
+</body>
+</html>

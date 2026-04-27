@@ -1,0 +1,51 @@
+genome.ref/
+genome.ref.guochao/
+Multi-omics/
+# Ignore multi-omics data dir, but keep sample metadata tracked
+new.Multi-omics/*
+!new.Multi-omics/all.sample.info
+!new.Multi-omics/represent.sample.info
+new.Multi-omics/nohup.out
+
+# Generated indexes / caches
+data/
+__pycache__/
+*.pyc
+
+# Local Python environment
+.venv/
+
+# Runtime / logs / pid
+*.log
+*.log.*.gz
+.perv.pid
+
+# Root-level drafts / duplicate assets (static/img/ versions stay tracked)
+/pig.svg
+/log.title.png
+/log.bottom.png
+/new.bottom.log.png
+
+# Local docs (README.md is the canonical user doc)
+README.backup.md
+PLAN.md
+
+# Editor / IDE
+.vscode/
+.idea/
+*~
+*.swp
+*.swo
+
+# pyGenomeTracks job artifacts
+tmp/
+
+# Local packaging artifact
+perv-atlas.tar.gz
+
+# Cursor IDE (plans, skills, local agent config)
+.cursor/
+
+# OS junk
+.DS_Store
+Thumbs.db

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2 class="section-title" data-i18n="br.title">Browser</h2>
+  <p class="section-subtitle" data-i18n="br.subtitle">...</p>
+
+  <section class="card" style="margin-bottom:18px;">
+    <h3 style="margin-top:0;" data-i18n="br.dl.title">Files</h3>
+    <div class="downloads">
+      <a class="download-item" href="{{ url_for('download_file', filename='pass.139.fa') }}">
+        <span class="ext">FA</span>
+        <span data-i18n="br.dl.fa">139 FASTA</span>
+      </a>
+      <a class="download-item" href="{{ url_for('download_file', filename='ORF.combine.HTML.bed') }}">
+        <span class="ext">BED</span>
+        <span data-i18n="br.dl.orf">ORF BED</span>
+      </a>
+      <a class="download-item" href="{{ url_for('download_file', filename='domin.combine.HTML.bed') }}">
+        <span class="ext">BED</span>
+        <span data-i18n="br.dl.domain">Domain BED</span>
+      </a>
+    </div>
+  </section>
+
+  <section style="margin-bottom:18px;">
+    <div class="chart-card">
+      <h4 data-i18n="br.chart.abbr">Breed distribution (139 annotated sequences)</h4>
+      <div class="chart-box tall" id="chart-abbr-browser"></div>
+    </div>
+  </section>
+
+  <section class="browser-layout">
+    <aside class="id-list">
+      <div class="id-filters">
+        <select id="id-filter-group" aria-label="Group filter">
+          <option value="" data-i18n="br.filter.all_groups">All groups</option>
+          <option value="Eastern">Eastern</option>
+          <option value="Western">Western</option>
+          <option value="Wild">Wild</option>
+        </select>
+        <select id="id-filter-sample" aria-label="Sample filter">
+          <option value="" data-i18n="br.filter.all_samples">All samples</option>
+        </select>
+      </div>
+      <div class="id-search-row">
+        <input type="search" id="id-search" data-i18n-ph="br.search.id" />
+        <button type="button" id="id-reset" class="filter-reset" data-i18n="br.filter.reset">Reset filters</button>
+      </div>
+      <div class="id-list-table-wrap">
+        <table class="id-list-table">
+          <thead>
+            <tr>
+              <th class="id-col-id" data-i18n="br.list.id">ID</th>
+              <th class="id-col-group" data-i18n="br.list.group">Group</th>
+              <th class="id-col-type" data-i18n="br.list.type">ERV</th>
+              <th class="id-col-len" data-i18n="br.list.len">Len</th>
+            </tr>
+          </thead>
+          <tbody id="id-list-tbody"></tbody>
+        </table>
+      </div>
+    </aside>
+
+    <div class="viewer">
+      <div class="card">
+        <div class="toolbar">
+          <div class="group" id="mode-group">
+            <button data-mode="orf" class="active" data-i18n="br.mode.orf">ORF</button>
+            <button data-mode="domain" data-i18n="br.mode.domain">Domain</button>
+          </div>
+          <div class="group" id="seq-group">
+            <button data-seq="dna" class="active" data-i18n="br.seq.dna">DNA</button>
+            <button data-seq="protein" data-i18n="br.seq.protein">Protein</button>
+          </div>
+          <select id="region-select"></select>
+          <button class="btn ghost small" id="btn-all-dna" data-i18n="br.all_dna">All DNA</button>
+          <button class="btn ghost small" id="btn-all-protein" data-i18n="br.all_protein">All proteins</button>
+        </div>
+
+        <div id="track" style="margin-top:14px;height:140px;"></div>
+        <div class="legend-row" id="track-legend"></div>
+      </div>
+
+      <div class="card sequence-card">
+        <div id="seq-empty" class="empty-hint" data-i18n="br.empty">Pick a sequence ID</div>
+        <div id="seq-display" style="display:none;">
+          <div class="header">
+            <div>
+              <div class="title" id="seq-title">-</div>
+              <div class="meta" id="seq-meta">-</div>
+            </div>
+            <div class="actions">
+              <button class="btn small secondary" id="btn-copy" data-i18n="br.copy">Copy</button>
+              <button class="btn small secondary" id="btn-download" data-i18n="br.download">Download</button>
+            </div>
+          </div>
+          <pre class="fasta" id="fasta"></pre>
+          <details class="highlight-panel" id="highlight-wrap" style="display:none;">
+            <summary data-i18n="br.highlight">Highlight in full sequence</summary>
+            <pre class="full-seq" id="full-seq"></pre>
+          </details>
+          <div id="protein-warn" style="display:none;color:#b45309;margin-top:10px;font-size:13px;" data-i18n="br.protein.warn"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block body_extra %}
+  <script src="{{ asset('js/abbr_breed_chart.js') }}"></script>
+  <script src="{{ asset('js/sequence.js') }}"></script>
+  <script src="{{ asset('js/browser.js') }}"></script>
+{% endblock %}
